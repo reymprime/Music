@@ -21,7 +21,8 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyBUDPbyvZI7RShBr3ozBk06GfI7V4hSpmE",
@@ -29,18 +30,69 @@
         projectId: "gnokz-pro",
         storageBucket: "gnokz-pro.firebasestorage.app",
         messagingSenderId: "88912267824",
-        appId: "1:88912267824:web:64075cc3a81a94e14e3bf5"
+        appId: "1:88912267824:web:64075cc3a81a94e14e3bf5",
+        measurementId: "G-NG3DXEJ2Y4"
     };
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    let currentUserUid = null;
 
     // KUNG WALANG NAKA-LOG IN, I-TALSALIK SILA PAPUNTANG LOGIN.HTML
-    onAuthStateChanged(auth, (user) => {
+    onAuthStateChanged(auth, async (user) => {
         if (!user) {
             window.location.href = "login.html";
+        } else {
+            currentUserUid = user.uid;
+            console.log("Database authentication verified for UID:", currentUserUid);
+            // Automatic sync-load pagkapasok ng user
+            await loadPlaylistFromCloud();
         }
     });
+
+    // HOOK FOR GLOBAL DEPLOYMENT SAVE
+    window.savePlaylistToCloud = async (localTracks, localPlaylists) => {
+        if (!currentUserUid) return;
+        try {
+            await setDoc(doc(db, "users_playlists", currentUserUid), {
+                tracks: localTracks,
+                playlists: localPlaylists,
+                lastUpdated: new Date()
+            });
+            console.log("🎵 Cloud database updated successfully!");
+        } catch (error) {
+            console.error("🔴 Cloud database push failure:", error);
+        }
+    };
+
+    // HOOK FOR GLOBAL DEPLOYMENT LOAD
+    async function loadPlaylistFromCloud() {
+        if (!currentUserUid) return;
+        try {
+            const docRef = doc(db, "users_playlists", currentUserUid);
+            const docSnap = await getDoc(docRef);
+
+            if (docSnap.exists()) {
+                const cloudData = docSnap.data();
+                console.log("📦 Cloud records fetched successfully.");
+                
+                if (typeof window.syncCloudDataToPlayer === "function") {
+                    window.syncCloudDataToPlayer(cloudData.tracks || [], cloudData.playlists || []);
+                }
+            } else {
+                console.log("🆕 No cloud playlist found for this record node. Creating a clean instance...");
+            }
+        } catch (error) {
+            console.error("🔴 Cloud database fetch failure:", error);
+        }
+    }
+
+    // Bind para sa log-out mechanics kung sakaling kakailanganin sa UI
+    window.triggerFirebaseSignOut = () => {
+        signOut(auth).then(() => { window.location.href = "login.html"; });
+    };
 </script>
 
     <style>
@@ -72,6 +124,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: 'Inter', sans-serif; }
         body { background-color: var(--bg-deep); color: var(--text-primary); min-height: 100vh; display: flex; justify-content: center; overflow: hidden; -webkit-font-smoothing: antialiased; }
 
+        .mesh-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; background: #000; }
         .mesh-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; background: #000; }
         .mesh-orb { position: absolute; border-radius: 50%; filter: blur(130px); transform: translateZ(0); }
         .orb-1 { width: 80vw; height: 80vw; background: rgba(30, 215, 96, 0.15); top: -15%; left: -10%; animation: drift 25s ease-in-out infinite alternate; }
@@ -362,6 +415,7 @@
             <div class="brand" onclick="App.openPwaInfoModal()">Gnokz <span class="pro-badge">PRO</span></div>
             <div class="header-actions">
                 <button class="icon-btn" id="btn-add" onclick="App.toggleInput()"><i data-lucide="plus"></i></button>
+                <button class="icon-btn" onclick="window.triggerFirebaseSignOut()"><i data-lucide="log-out"></i></button>
             </div>
         </header>
 
@@ -467,7 +521,22 @@
             try { const s = localStorage.getItem(this.KEY); if (s) this.data = { ...this.data, ...JSON.parse(s) }; } catch (e) {}
             if(!this.data.playlists) this.data.playlists = [];
         },
-        save() { localStorage.setItem(this.KEY, JSON.stringify(this.data)); }
+        save() { 
+            localStorage.setItem(this.KEY, JSON.stringify(this.data));
+            // INTERCEPT TO CLOUD: Kapag nag-save sa local storage, itulak agad sa Firebase Firestore
+            if (typeof window.savePlaylistToCloud === "function") {
+                window.savePlaylistToCloud(this.data.tracks, this.data.playlists);
+            }
+        }
+    };
+
+    // BRIDGE ATTACHMENT FUNCTION: Tinatawag ng Firebase para i-overwrite ang display
+    window.syncCloudDataToPlayer = (cloudTracks, cloudPlaylists) => {
+        DataManager.data.tracks = cloudTracks;
+        DataManager.data.playlists = cloudPlaylists;
+        localStorage.setItem(DataManager.KEY, JSON.stringify(DataManager.data));
+        console.log("🔄 Local storage updated to match Cloud baseline.");
+        App.updateUI();
     };
 
     const App = {
@@ -530,7 +599,6 @@
             }
         },
 
-        // LONG PRESS PLAYLIST EVENT HANDLERS
         handlePlaylistTouchStart(name, type, e) {
             this.isLongPress = false;
             this.cancelLongPress();
@@ -893,7 +961,6 @@
 
         async playTrack(id, type = 'yt') {
             this.currentTrackId = id; this.currentTrackType = type;
-            // Map queue to only filter true tracks avoiding headers
             let flatQueue = [];
             if (this.currentTab === 'favorites') {
                const ytFavs = DataManager.data.tracks.filter(t => t.favorite).map(t => ({...t, type: 'yt'}));
