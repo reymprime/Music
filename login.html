@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log In - Premium Music PWA</title>
+    <style>
+        body {
+            margin: 0; padding: 0;
+            font-family: Arial, sans-serif;
+            background: radial-gradient(circle at center, #121212 0%, #050505 100%);
+            color: #ffffff;
+            display: flex; justify-content: center; align-items: center;
+            height: 100vh;
+        }
+        .auth-container {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 40px; width: 300px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            text-align: center;
+        }
+        h2 { color: #1db954; margin-bottom: 24px; }
+        input {
+            width: 100%; padding: 12px; margin-bottom: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px; color: #fff; box-sizing: border-box;
+        }
+        button {
+            width: 100%; padding: 12px;
+            background: #1db954; border: none; border-radius: 8px;
+            color: #121212; font-weight: bold; cursor: pointer;
+        }
+        .toggle-text { margin-top: 15px; font-size: 12px; color: #b3b3b3; }
+        .toggle-text span { color: #1db954; cursor: pointer; text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <div class="auth-container">
+        <h2 id="auth-title">LOG IN</h2>
+        <input type="email" id="email" placeholder="Email Address" required>
+        <input type="password" id="password" placeholder="Password (6+ chars)" required>
+        <button id="btn-action">Sign In</button>
+        <p class="toggle-text" id="toggle-mode">
+            Bago rito? <span id="toggle-link">Gumawa ng Account</span>
+        </p>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBUDPbyvZI7RShBr3ozBk06GfI7V4hSpmE",
+            authDomain: "gnokz-pro.firebaseapp.com",
+            projectId: "gnokz-pro",
+            storageBucket: "gnokz-pro.firebasestorage.app",
+            messagingSenderId: "88912267824",
+            appId: "1:88912267824:web:64075cc3a81a94e14e3bf5",
+            measurementId: "G-NG3DXEJ2Y4"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        const authTitle = document.getElementById('auth-title');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const btnAction = document.getElementById('btn-action');
+        const toggleLink = document.getElementById('toggle-link');
+
+        let isLoginMode = true;
+
+        toggleLink.addEventListener('click', () => {
+            isLoginMode = !isLoginMode;
+            if (isLoginMode) {
+                authTitle.innerText = "LOG IN";
+                btnAction.innerText = "Sign In";
+                document.getElementById('toggle-mode').innerHTML = 'Bago rito? <span id="toggle-link">Gumawa ng Account</span>';
+            } else {
+                authTitle.innerText = "SIGN UP";
+                btnAction.innerText = "Register";
+                document.getElementById('toggle-mode').innerHTML = 'May account na? <span id="toggle-link">Mag-log in dito</span>';
+            }
+            document.getElementById('toggle-link').addEventListener('click', arguments.callee);
+        });
+
+        btnAction.addEventListener('click', () => {
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            if (!email || !password) return alert('Punan ang lahat ng field, bro.');
+
+            if (isLoginMode) {
+                signInWithEmailAndPassword(auth, email, password)
+                    .then(() => { window.location.href = "index.html"; }) // PAG TAMA, IPAPASOK SA INDEX.HTML
+                    .catch(error => alert('Error: ' + error.message));
+            } else {
+                createUserWithEmailAndPassword(auth, email, password)
+                    .then(() => { alert('Account nilikha! Pwede ka nang mag-log in.'); window.location.reload(); })
+                    .catch(error => alert('Error: ' + error.message));
+            }
+        });
+
+        // Kung naka-log in na pala dati, papasukin agad sa index.html
+        onAuthStateChanged(auth, (user) => {
+            if (user) { window.location.href = "index.html"; }
+        });
+    </script>
+</body>
+</html>

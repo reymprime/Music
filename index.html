@@ -19,6 +19,30 @@
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyBUDPbyvZI7RShBr3ozBk06GfI7V4hSpmE",
+        authDomain: "gnokz-pro.firebaseapp.com",
+        projectId: "gnokz-pro",
+        storageBucket: "gnokz-pro.firebasestorage.app",
+        messagingSenderId: "88912267824",
+        appId: "1:88912267824:web:64075cc3a81a94e14e3bf5"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    // KUNG WALANG NAKA-LOG IN, I-TALSALIK SILA PAPUNTANG LOGIN.HTML
+    onAuthStateChanged(auth, (user) => {
+        if (!user) {
+            window.location.href = "login.html";
+        }
+    });
+</script>
+
     <style>
         :root {
             --bg-deep: #000000;
