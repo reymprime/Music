@@ -383,6 +383,29 @@
             <div class="island-progress-bar-fill" id="island-progress-fill"></div>
         </div>
     </div>
+<div id="auth-card" style="max-width: 400px; margin: 50px auto; padding: 20px; text-align: center; font-family: sans-serif; background: #1e1e1e; color: #fff; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);">
+    <h2 id="auth-title" style="color: #1db954;">LOG IN</h2>
+    
+    <div style="margin-bottom: 15px;">
+        <input type="email" id="email" placeholder="Email Address" style="width: 90%; padding: 10px; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: #fff;">
+    </div>
+    
+    <div style="margin-bottom: 20px;">
+        <input type="password" id="password" placeholder="Password (Minimum 6 chars)" style="width: 90%; padding: 10px; border-radius: 4px; border: 1px solid #333; background: #2a2a2a; color: #fff;">
+    </div>
+    
+    <button id="btn-action" style="width: 95%; padding: 12px; background: #1db954; color: #000; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">Sign In</button>
+    
+    <p id="toggle-mode" style="font-size: 14px; margin-top: 15px; color: #aaa;">
+        Bago rito? <span id="toggle-link" style="color: #1db954; cursor: pointer; text-decoration: underline;">Gumawa ng Account</span>
+    </p>
+</div>
+
+<div id="main-app" style="display: none; padding: 20px; text-align: center;">
+    <h2 style="color: #1db954;">Naka-log in ka na, Bro!</h2>
+    <p>Welcome sa buong features ng Progressive Web App mo.</p>
+    <button id="btn-logout" style="padding: 10px 20px; background: #ff4444; color: white; border: none; border-radius: 4px; cursor: pointer;">Log Out</button>
+</div>
 
 <script type="module">
     // 1. Mag-import ng Firebase Functions gamit ang CDN (Bagay sa diretsong HTML file)
