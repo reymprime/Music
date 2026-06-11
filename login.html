@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Log In - Premium Music PWA</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         body {
             margin: 0; padding: 0;
@@ -37,6 +38,65 @@
         }
         .toggle-text { margin-top: 15px; font-size: 12px; color: #b3b3b3; }
         .toggle-text span { color: #1db954; cursor: pointer; text-decoration: underline; }
+        
+        /* PREMIUM GLASSMORPHISM TOAST ALERT */
+        .custom-toast {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            width: calc(100% - 40px);
+            max-width: 400px;
+            background: rgba(20, 20, 20, 0.85);
+            backdrop-filter: blur(20px) saturate(160%);
+            -webkit-backdrop-filter: blur(20px) saturate(160%);
+            border: 1px solid rgba(255, 68, 68, 0.3); /* Default red border para sa error status */
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), inset 0 1px 1px rgba(255, 255, 255, 0.1);
+            border-radius: 18px;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            z-index: 99999;
+            opacity: 0;
+            pointer-events: none;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s ease;
+        }
+
+        .custom-toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .toast-icon {
+            width: 38px;
+            height: 38px;
+            background: rgba(255, 68, 68, 0.15);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ff4444;
+            flex-shrink: 0;
+        }
+
+        .toast-content {
+            flex: 1;
+        }
+
+        .toast-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 2px;
+        }
+
+        .toast-message {
+            font-size: 12.5px;
+            color: #a1a1aa;
+            line-height: 1.4;
+        }
     </style>
 </head>
 <body>
@@ -47,8 +107,18 @@
         <input type="password" id="password" placeholder="Password (6+ chars)" required>
         <button id="btn-action">Sign In</button>
         <p class="toggle-text" id="toggle-mode">
-            Bago rito? <span id="toggle-link">Gumawa ng Account</span>
+            New here? <span id="toggle-link">Create an Account</span>
         </p>
+    </div>
+    
+    <div class="custom-toast" id="toast-notification">
+        <div class="toast-icon" id="toast-icon-box">
+            <i data-lucide="alert-circle" style="width: 20px; height: 20px;"></i>
+        </div>
+        <div class="toast-content">
+            <div class="toast-title" id="toast-header-title">System Notice</div>
+            <div class="toast-message" id="toast-body-text">Something went wrong.</div>
+        </div>
     </div>
 
     <script type="module">
@@ -75,40 +145,104 @@
         const toggleLink = document.getElementById('toggle-link');
 
         let isLoginMode = true;
+        let toastTimeout = null;
 
-        toggleLink.addEventListener('click', () => {
+        // MASTER CUSTOM TOAST TRIGGER LOGIC (COMPLETELY TRANSLATED TO ENGLISH)
+        window.showCustomToast = function(message, title = "Login Security Notice", isSuccess = false) {
+            const toast = document.getElementById('toast-notification');
+            const toastTitle = document.getElementById('toast-header-title');
+            const toastText = document.getElementById('toast-body-text');
+            const iconBox = document.getElementById('toast-icon-box');
+
+            toastTitle.innerText = title;
+            
+            // Clean, global professional English system responses
+            if (message.includes("auth/invalid-credential") || message.includes("invalid-credential")) {
+                toastText.innerText = "Invalid email or password. Please verify and try again.";
+            } else if (message.includes("auth/missing-password") || message.includes("missing-password")) {
+                toastText.innerText = "Password field is empty. Please enter your account password.";
+            } else if (message.includes("auth/weak-password")) {
+                toastText.innerText = "The security password is too weak. It must be at least 6 characters long.";
+            } else if (message.includes("auth/invalid-email")) {
+                toastText.innerText = "The provided email address format is invalid.";
+            } else if (message.includes("auth/email-already-in-use")) {
+                toastText.innerText = "This email is already registered. Please proceed to sign in instead.";
+            } else {
+                toastText.innerText = message;
+            }
+
+            // Dynamic core styling engine based on authentication context
+            if (isSuccess) {
+                toast.style.borderColor = "rgba(30, 215, 96, 0.35)"; // Brand Premium Green border
+                iconBox.style.background = "rgba(30, 215, 96, 0.15)";
+                iconBox.style.color = "#1ed760";
+                iconBox.innerHTML = '<i data-lucide="check-circle" style="width: 20px; height: 20px;"></i>';
+            } else {
+                toast.style.borderColor = "rgba(255, 68, 68, 0.35)"; // Dynamic Red Alert border
+                iconBox.style.background = "rgba(255, 68, 68, 0.15)";
+                iconBox.style.color = "#ff4444";
+                iconBox.innerHTML = '<i data-lucide="alert-circle" style="width: 20px; height: 20px;"></i>';
+            }
+
+            // Vector map rendering pipeline
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+
+            // Notification reveal state
+            toast.classList.add('show');
+
+            // Prevent thread overlapping on concurrent clicks
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 4500);
+        };
+
+        toggleLink.addEventListener('click', function toggleHandler() {
             isLoginMode = !isLoginMode;
             if (isLoginMode) {
                 authTitle.innerText = "LOG IN";
                 btnAction.innerText = "Sign In";
-                document.getElementById('toggle-mode').innerHTML = 'Bago rito? <span id="toggle-link">Gumawa ng Account</span>';
+                document.getElementById('toggle-mode').innerHTML = 'New here? <span id="toggle-link">Create an Account</span>';
             } else {
                 authTitle.innerText = "SIGN UP";
                 btnAction.innerText = "Register";
-                document.getElementById('toggle-mode').innerHTML = 'May account na? <span id="toggle-link">Mag-log in dito</span>';
+                document.getElementById('toggle-mode').innerHTML = 'Already have an account? <span id="toggle-link">Log in here</span>';
             }
-            document.getElementById('toggle-link').addEventListener('click', arguments.callee);
+            document.getElementById('toggle-link').addEventListener('click', toggleHandler);
         });
 
         btnAction.addEventListener('click', () => {
-            const email = emailInput.value;
-            const password = passwordInput.value;
-            if (!email || !password) return alert('Punan ang lahat ng field, bro.');
+            const email = emailInput.value.trim();
+            const password = passwordInput.value.trim();
+            
+            if (!email || !password) {
+                return showCustomToast('Please fill in all required fields.', 'System Validation');
+            }
 
             if (isLoginMode) {
                 signInWithEmailAndPassword(auth, email, password)
-                    .then(() => { window.location.href = "index.html"; }) // PAG TAMA, IPAPASOK SA INDEX.HTML
-                    .catch(error => alert('Error: ' + error.message));
+                    .then(() => { window.location.href = "index.html"; })
+                    .catch(error => showCustomToast(error.message, 'Authentication Failed'));
             } else {
                 createUserWithEmailAndPassword(auth, email, password)
-                    .then(() => { alert('Account nilikha! Pwede ka nang mag-log in.'); window.location.reload(); })
-                    .catch(error => alert('Error: ' + error.message));
+                    .then(() => { 
+                        showCustomToast('Account created successfully! You can now log in.', 'Registration Success', true); 
+                        setTimeout(() => window.location.reload(), 2000);
+                    })
+                    .catch(error => showCustomToast(error.message, 'Registration Failed'));
             }
         });
 
-        // Kung naka-log in na pala dati, papasukin agad sa index.html
+        // Auto-routing engine for existing sessions
         onAuthStateChanged(auth, (user) => {
             if (user) { window.location.href = "index.html"; }
+        });
+
+        // Initialize on DOM load
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         });
     </script>
 </body>
